@@ -22,7 +22,7 @@ While editing, tapping an item does not run it and rows get bigger.
 - **Tap the rest of the item** to open its folder panel right below it:
   - **Folder**: move the item out of folders or into one of your folders.
   - **New folder**: type a name and tap **Create and move** to make a folder and put the item in it.
-  - **Order in folder** (items inside a folder): **Up** / **Down** move the item within its folder.
+- **Drag the handle** (⠿) at the left of an item inside a folder to change its place in the folder. Dragging anywhere else scrolls the menu as usual.
 - **Tap a folder** to rename it, move it up or down, or delete it. Deleting a folder moves its items back out; nothing is lost.
 - Tap **Finish tidying** (정리 끝내기), or tap outside the menu, to stop editing.
 

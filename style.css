@@ -68,6 +68,35 @@
     border-left: 1px solid var(--SmartThemeBorderColor);
 }
 
+/* 폴더 안 항목: 왼쪽 손잡이(끌어서 순서 바꾸기). 들여쓰기는 손잡이가 대신한다 */
+#extensionsMenu.wandtrim.wandtrim-editing [data-wandtrim-in-folder] {
+    padding-left: 0;
+}
+
+#extensionsMenu.wandtrim-editing [data-wandtrim-in-folder]::before {
+    content: '\f58e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    flex-shrink: 0;
+    align-self: stretch;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    cursor: grab;
+}
+
+#extensionsMenu .wandtrim-dragging {
+    position: relative;
+    z-index: 1;
+    transform: translateY(var(--wandtrim-drag-y, 0));
+    background-color: var(--SmartThemeBlurTintColor);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border-radius: 6px;
+    cursor: grabbing;
+}
+
 #extensionsMenu.wandtrim-editing [data-wandtrim-off] {
     opacity: 0.35 !important;
     text-decoration: line-through;
@@ -134,11 +163,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-#wandtrim_panel .wandtrim-chip.disabled {
-    opacity: 0.35;
-    cursor: default;
 }
 
 #wandtrim_panel .wandtrim-chip.active {

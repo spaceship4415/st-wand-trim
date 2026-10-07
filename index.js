@@ -7,12 +7,18 @@ const TOGGLE_ID = 'wandtrim_toggle';
 const PANEL_ID = 'wandtrim_panel';
 /** 편집 중 줄 오른쪽 이만큼(눈 아이콘 자리)을 누르면 패널 대신 숨김/보임만 바꾼다 */
 const EYE_HIT_WIDTH = 50;
+/** 편집 중 폴더 안 항목의 왼쪽 이만큼(손잡이 자리)을 끌면 순서를 바꾼다 */
+const HANDLE_HIT_WIDTH = 44;
+/** 끌다가 메뉴 위·아래 끝에서 이만큼 안에 들어오면 메뉴를 스크롤한다 */
+const AUTO_SCROLL_EDGE = 40;
 const ROW_SELECTOR = ':scope > .extension_container > div, :scope > div:not(.extension_container)';
 
 /** 펼친 폴더 (새로고침하면 다시 접힘) */
 const openFolders = new Set();
 /** 편집 중 패널을 연 대상: 항목 key 또는 'folder:<id>' */
 let selected = null;
+/** 손잡이로 끄는 중인 항목 */
+let drag = null;
 
 function rowKey(row) {
     return row.id || `text:${row.textContent.trim()}`;
@@ -129,10 +135,9 @@ function selectedElement(menu) {
     return rows(menu).find(row => rowKey(row) === selected) ?? null;
 }
 
-function chip(action, label, { value = '', active = false, icon = '', disabled = false } = {}) {
+function chip(action, label, { value = '', active = false, icon = '' } = {}) {
     const i = icon ? `<i class="fa-solid ${icon}"></i>` : '';
-    const classes = `wandtrim-chip menu_button${active ? ' active' : ''}${disabled ? ' disabled' : ''}`;
-    return `<div class="${classes}" data-action="${disabled ? '' : action}" data-value="${escapeHtml(value)}">${i}<span>${escapeHtml(label)}</span></div>`;
+    return `<div class="wandtrim-chip menu_button${active ? ' active' : ''}" data-action="${action}" data-value="${escapeHtml(value)}">${i}<span>${escapeHtml(label)}</span></div>`;
 }
 
 function renderPanel(menu) {
@@ -163,18 +168,7 @@ function renderPanel(menu) {
     } else {
         const folder = s.folders.find(f => f.id === s.folderOf[selected]);
         const current = folder ? folder.id : '';
-        let orderRow = '';
-        if (folder) {
-            const keys = folderMembers(menu, folder).map(rowKey);
-            const i = keys.indexOf(selected);
-            orderRow = `
-            <div class="wandtrim-label">폴더 안 순서</div>
-            <div class="wandtrim-panel-row">
-                ${chip('item-up', '위로', { icon: 'fa-arrow-up', disabled: i <= 0 })}
-                ${chip('item-down', '아래로', { icon: 'fa-arrow-down', disabled: i >= keys.length - 1 })}
-            </div>`;
-        }
-        panel.innerHTML = `${orderRow}
+        panel.innerHTML = `
             <div class="wandtrim-label">폴더</div>
             <div class="wandtrim-panel-row">
                 ${chip('move', '폴더 밖', { active: !current })}
@@ -209,18 +203,6 @@ function runAction(menu, action, value) {
     const typed = input?.value.trim() ?? '';
 
     switch (action) {
-        case 'item-up':
-        case 'item-down': {
-            const folder = s.folders.find(f => f.id === s.folderOf[selected]);
-            if (!folder) return;
-            const keys = folderMembers(menu, folder).map(rowKey);
-            const i = keys.indexOf(selected);
-            const j = action === 'item-up' ? i - 1 : i + 1;
-            if (i < 0 || j < 0 || j >= keys.length) return;
-            [keys[i], keys[j]] = [keys[j], keys[i]];
-            folder.order = keys;
-            break;
-        }
         case 'move':
             // 다른 폴더로 옮기면 예전 폴더의 순서에서 빼서, 다시 넣을 때 맨 뒤로 가게
             for (const f of s.folders) f.order = f.order.filter(k => k !== selected);
@@ -267,6 +249,64 @@ function runAction(menu, action, value) {
     }
     saveSettings();
     renderPanel(menu);
+}
+
+/** 편집 중 폴더 안 항목의 손잡이 자리를 눌렀으면 그 항목 */
+function handleRowAt(menu, target, clientX) {
+    if (!menu.classList.contains('wandtrim-editing')) return null;
+    const row = rows(menu).find(r => r.contains(target));
+    if (!row || !row.hasAttribute('data-wandtrim-in-folder')) return null;
+    return clientX - row.getBoundingClientRect().left <= HANDLE_HIT_WIDTH ? row : null;
+}
+
+function startDrag(menu, row, event) {
+    const { folders, folderOf } = getSettings();
+    const folder = folders.find(f => f.id === folderOf[rowKey(row)]);
+    if (!folder) return;
+    if (selected) {
+        selected = null;
+        renderPanel(menu);
+    }
+    drag = { menu, row, folder, pointerId: event.pointerId, grabY: event.clientY - row.getBoundingClientRect().top, lastY: event.clientY };
+    row.classList.add('wandtrim-dragging');
+    row.setPointerCapture?.(event.pointerId);
+}
+
+function moveDrag(clientY) {
+    const { menu, row, folder } = drag;
+    drag.lastY = clientY;
+
+    // 손가락 위치보다 가운데가 위에 있는 다른 항목 수 = 들어갈 자리
+    const others = folderMembers(menu, folder).filter(r => r !== row);
+    const index = others.filter(r => {
+        const rect = r.getBoundingClientRect();
+        return rect.top + rect.height / 2 < clientY;
+    }).length;
+    const keys = others.map(rowKey);
+    keys.splice(index, 0, rowKey(row));
+    const before = folderMembers(menu, folder).map(rowKey);
+    if (keys.some((key, i) => key !== before[i])) {
+        folder.order = keys;
+        apply(menu);
+    }
+
+    // 자리를 바꾼 뒤의 원래 위치를 기준으로 손가락을 따라가게
+    const current = Number(row.style.getPropertyValue('--wandtrim-drag-y').replace('px', '')) || 0;
+    const naturalTop = row.getBoundingClientRect().top - current;
+    row.style.setProperty('--wandtrim-drag-y', `${clientY - drag.grabY - naturalTop}px`);
+
+    const box = menu.getBoundingClientRect();
+    if (clientY < box.top + AUTO_SCROLL_EDGE) menu.scrollTop -= 8;
+    else if (clientY > box.bottom - AUTO_SCROLL_EDGE) menu.scrollTop += 8;
+}
+
+function endDrag() {
+    const { menu, row } = drag;
+    row.classList.remove('wandtrim-dragging');
+    row.style.removeProperty('--wandtrim-drag-y');
+    drag = null;
+    saveSettings();
+    apply(menu);
 }
 
 async function init() {
@@ -333,6 +373,8 @@ async function init() {
         const row = rows(menu).find(r => r.contains(target));
         if (!row) return;
         stop();
+        // 손잡이는 끌기 전용. 그냥 눌렀을 땐 아무것도 안 한다
+        if (event.clientX && handleRowAt(menu, target, event.clientX)) return;
         const key = rowKey(row);
         // 키보드로 누르면 좌표가 없으니(clientX 0) 패널 쪽으로 간다
         if (event.clientX && row.getBoundingClientRect().right - event.clientX <= EYE_HIT_WIDTH) {
@@ -342,6 +384,30 @@ async function init() {
         selected = selected === key ? null : key;
         renderPanel(menu);
     }, true);
+
+    // 손잡이에서 시작한 터치는 메뉴 스크롤이 아니라 끌기로 (passive: false 여야 막을 수 있다)
+    menu.addEventListener('touchstart', (event) => {
+        const touch = event.touches[0];
+        if (touch && handleRowAt(menu, /** @type {HTMLElement} */ (event.target), touch.clientX)) event.preventDefault();
+    }, { passive: false, capture: true });
+
+    menu.addEventListener('pointerdown', (event) => {
+        if (drag || event.button > 0) return;
+        const row = handleRowAt(menu, /** @type {HTMLElement} */ (event.target), event.clientX);
+        if (!row) return;
+        event.preventDefault();
+        startDrag(menu, row, event);
+    }, true);
+
+    menu.addEventListener('pointermove', (event) => {
+        if (drag && event.pointerId === drag.pointerId) moveDrag(event.clientY);
+    }, true);
+
+    for (const type of ['pointerup', 'pointercancel']) {
+        menu.addEventListener(type, (event) => {
+            if (drag && event.pointerId === drag.pointerId) endDrag();
+        }, true);
+    }
 
     menu.addEventListener('keydown', (event) => {
         const target = /** @type {HTMLElement} */ (event.target);
