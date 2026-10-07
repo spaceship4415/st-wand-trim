@@ -55,6 +55,23 @@ function syncFolderHeaders(menu) {
     }
 }
 
+/** 폴더 안 항목을 폴더에 저장된 순서대로. 순서에 없는 항목(새로 넣은 것)은 원래 메뉴 순서로 뒤에 */
+function sortInFolder(folder, list) {
+    const rank = key => {
+        const i = folder.order.indexOf(key);
+        return i < 0 ? Infinity : i;
+    };
+    return list
+        .map((row, i) => ({ row, i, r: rank(rowKey(row)) }))
+        .sort((a, b) => a.r - b.r || a.i - b.i)
+        .map(x => x.row);
+}
+
+function folderMembers(menu, folder) {
+    const { folderOf } = getSettings();
+    return sortInFolder(folder, rows(menu).filter(row => folderOf[rowKey(row)] === folder.id));
+}
+
 function apply(menu) {
     const s = getSettings();
     syncFolderHeaders(menu);
@@ -82,7 +99,7 @@ function apply(menu) {
     for (const folder of s.folders) {
         const header = folderHeader(folder);
         const open = editing || openFolders.has(folder.id);
-        const list = members.get(folder.id);
+        const list = sortInFolder(folder, members.get(folder.id));
         header.style.order = String(order += 2);
         header.toggleAttribute('data-wandtrim-open', open);
         // 숨긴 것만 들어 있거나 빈 폴더는 평소엔 안 보이게
@@ -112,9 +129,10 @@ function selectedElement(menu) {
     return rows(menu).find(row => rowKey(row) === selected) ?? null;
 }
 
-function chip(action, label, { value = '', active = false, icon = '' } = {}) {
+function chip(action, label, { value = '', active = false, icon = '', disabled = false } = {}) {
     const i = icon ? `<i class="fa-solid ${icon}"></i>` : '';
-    return `<div class="wandtrim-chip menu_button${active ? ' active' : ''}" data-action="${action}" data-value="${escapeHtml(value)}">${i}<span>${escapeHtml(label)}</span></div>`;
+    const classes = `wandtrim-chip menu_button${active ? ' active' : ''}${disabled ? ' disabled' : ''}`;
+    return `<div class="${classes}" data-action="${disabled ? '' : action}" data-value="${escapeHtml(value)}">${i}<span>${escapeHtml(label)}</span></div>`;
 }
 
 function renderPanel(menu) {
@@ -143,8 +161,20 @@ function renderPanel(menu) {
                 <div class="wandtrim-hint">폴더를 지우면 안에 있던 항목은 밖으로 나옵니다.</div>`;
         }
     } else {
-        const current = s.folders.some(f => f.id === s.folderOf[selected]) ? s.folderOf[selected] : '';
-        panel.innerHTML = `
+        const folder = s.folders.find(f => f.id === s.folderOf[selected]);
+        const current = folder ? folder.id : '';
+        let orderRow = '';
+        if (folder) {
+            const keys = folderMembers(menu, folder).map(rowKey);
+            const i = keys.indexOf(selected);
+            orderRow = `
+            <div class="wandtrim-label">폴더 안 순서</div>
+            <div class="wandtrim-panel-row">
+                ${chip('item-up', '위로', { icon: 'fa-arrow-up', disabled: i <= 0 })}
+                ${chip('item-down', '아래로', { icon: 'fa-arrow-down', disabled: i >= keys.length - 1 })}
+            </div>`;
+        }
+        panel.innerHTML = `${orderRow}
             <div class="wandtrim-label">폴더</div>
             <div class="wandtrim-panel-row">
                 ${chip('move', '폴더 밖', { active: !current })}
@@ -179,7 +209,21 @@ function runAction(menu, action, value) {
     const typed = input?.value.trim() ?? '';
 
     switch (action) {
+        case 'item-up':
+        case 'item-down': {
+            const folder = s.folders.find(f => f.id === s.folderOf[selected]);
+            if (!folder) return;
+            const keys = folderMembers(menu, folder).map(rowKey);
+            const i = keys.indexOf(selected);
+            const j = action === 'item-up' ? i - 1 : i + 1;
+            if (i < 0 || j < 0 || j >= keys.length) return;
+            [keys[i], keys[j]] = [keys[j], keys[i]];
+            folder.order = keys;
+            break;
+        }
         case 'move':
+            // 다른 폴더로 옮기면 예전 폴더의 순서에서 빼서, 다시 넣을 때 맨 뒤로 가게
+            for (const f of s.folders) f.order = f.order.filter(k => k !== selected);
             if (value) s.folderOf[selected] = value;
             else delete s.folderOf[selected];
             break;
@@ -189,7 +233,8 @@ function runAction(menu, action, value) {
                 return;
             }
             const id = Date.now().toString(36);
-            s.folders.push({ id, name: typed });
+            for (const f of s.folders) f.order = f.order.filter(k => k !== selected);
+            s.folders.push({ id, name: typed, order: [] });
             s.folderOf[selected] = id;
             break;
         }

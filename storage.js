@@ -20,7 +20,9 @@ function normalize(stored) {
     return {
         hidden: Array.isArray(stored.hidden) ? stored.hidden.filter(k => typeof k === 'string') : [],
         folders: Array.isArray(stored.folders)
-            ? stored.folders.filter(f => f && typeof f.id === 'string' && typeof f.name === 'string')
+            ? stored.folders
+                .filter(f => f && typeof f.id === 'string' && typeof f.name === 'string')
+                .map(f => ({ id: f.id, name: f.name, order: Array.isArray(f.order) ? f.order.filter(k => typeof k === 'string') : [] }))
             : [],
         folderOf: stored.folderOf && typeof stored.folderOf === 'object' && !Array.isArray(stored.folderOf) ? stored.folderOf : {},
     };

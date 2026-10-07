@@ -136,6 +136,11 @@
     white-space: nowrap;
 }
 
+#wandtrim_panel .wandtrim-chip.disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
 #wandtrim_panel .wandtrim-chip.active {
     background-color: var(--SmartThemeQuoteColor);
     color: var(--SmartThemeBlurTintColor);

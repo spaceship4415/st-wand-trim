@@ -22,13 +22,14 @@ While editing, tapping an item does not run it and rows get bigger.
 - **Tap the rest of the item** to open its folder panel right below it:
   - **Folder**: move the item out of folders or into one of your folders.
   - **New folder**: type a name and tap **Create and move** to make a folder and put the item in it.
+  - **Order in folder** (items inside a folder): **Up** / **Down** move the item within its folder.
 - **Tap a folder** to rename it, move it up or down, or delete it. Deleting a folder moves its items back out; nothing is lost.
 - Tap **Finish tidying** (정리 끝내기), or tap outside the menu, to stop editing.
 
 Outside editing, tap a folder to open or close it right inside the menu. Folders start closed after a page reload.
 A folder whose items are all hidden is not shown.
 
-Menu order: items outside folders, then folders, then **Tidy menu**. Inside a folder, items keep their original menu order.
+Menu order: items outside folders, then folders, then **Tidy menu**. Inside a folder, items keep their original menu order until you move them; items newly put in a folder go to the end.
 Items that other extensions add later can be hidden or put in folders the same way.
 
 ## How it works
