@@ -68,12 +68,21 @@
     border-left: 1px solid var(--SmartThemeBorderColor);
 }
 
-/* 폴더 안 항목: 왼쪽 손잡이(끌어서 순서 바꾸기). 들여쓰기는 손잡이가 대신한다 */
-#extensionsMenu.wandtrim.wandtrim-editing [data-wandtrim-in-folder] {
+/* 왼쪽 손잡이(끌어서 옮기기): 모든 항목과 폴더. 폴더 안 항목은 손잡이 앞을 조금 들여 쓴다 */
+#extensionsMenu.wandtrim.wandtrim-editing>.extension_container>div,
+#extensionsMenu.wandtrim.wandtrim-editing>div:not(.extension_container):not(.wandtrim-own),
+#extensionsMenu.wandtrim.wandtrim-editing>.wandtrim-folder {
     padding-left: 0;
 }
 
-#extensionsMenu.wandtrim-editing [data-wandtrim-in-folder]::before {
+#extensionsMenu.wandtrim.wandtrim-editing>.extension_container>div[data-wandtrim-in-folder],
+#extensionsMenu.wandtrim.wandtrim-editing>div[data-wandtrim-in-folder]:not(.extension_container):not(.wandtrim-own) {
+    padding-left: 16px;
+}
+
+#extensionsMenu.wandtrim-editing>.extension_container>div::before,
+#extensionsMenu.wandtrim-editing>div:not(.extension_container):not(.wandtrim-own)::before,
+#extensionsMenu.wandtrim-editing>.wandtrim-folder::before {
     content: '\f58e';
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
@@ -97,6 +106,18 @@
     cursor: grabbing;
 }
 
+/* 항목을 폴더 줄 위에 놓으려는 중: 그 폴더 표시 */
+#extensionsMenu .wandtrim-folder[data-wandtrim-drop] {
+    outline: 2px solid var(--SmartThemeQuoteColor);
+    outline-offset: -2px;
+    border-radius: 6px;
+}
+
+/* 폴더를 끄는 중엔 폴더 안 항목을 접어서 폴더 줄만 남긴다 */
+#extensionsMenu.wandtrim-folder-drag [data-wandtrim-in-folder] {
+    display: none !important;
+}
+
 #extensionsMenu.wandtrim-editing [data-wandtrim-off] {
     opacity: 0.35 !important;
     text-decoration: line-through;
@@ -114,6 +135,11 @@
 #extensionsMenu.wandtrim {
     max-width: calc(100vw - 16px);
     max-width: calc(100dvw - 16px);
+}
+
+/* 위로도 화면 밖으로 안 나가게: 메뉴 아래 끝에서 화면 위까지 남은 높이(index.js fitHeight) */
+#extensionsMenu.wandtrim[style*="--wandtrim-max-h"] {
+    max-height: min(calc(100dvh - calc(2 * var(--bottomFormBlockSize) + 10px)), var(--wandtrim-max-h));
 }
 
 /* 편집 패널: 칩을 한 줄로 늘어놓은 폭으로 메뉴를 넓히지 않고, 메뉴 폭에 맞춰 줄을 바꾼다 */

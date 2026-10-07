@@ -24,6 +24,8 @@ function normalize(stored) {
                 .filter(f => f && typeof f.id === 'string' && typeof f.name === 'string')
                 .map(f => ({ id: f.id, name: f.name, order: Array.isArray(f.order) ? f.order.filter(k => typeof k === 'string') : [] }))
             : [],
+        /** 폴더 밖 항목의 순서 */
+        order: Array.isArray(stored.order) ? stored.order.filter(k => typeof k === 'string') : [],
         folderOf: stored.folderOf && typeof stored.folderOf === 'object' && !Array.isArray(stored.folderOf) ? stored.folderOf : {},
     };
 }
