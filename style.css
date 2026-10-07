@@ -1,0 +1,150 @@
+/* 컨테이너를 펴서 모든 항목을 메뉴의 직속 flex 항목으로 만든다 (order 로 배치하려고) */
+#extensionsMenu.wandtrim>.extension_container {
+    display: contents;
+}
+
+#extensionsMenu:not(.wandtrim-editing) [data-wandtrim-off],
+#extensionsMenu:not(.wandtrim-editing) [data-wandtrim-closed],
+#extensionsMenu:not(.wandtrim-editing) .wandtrim-folder[data-wandtrim-empty],
+#wandtrim_panel[hidden] {
+    display: none !important;
+}
+
+/* 폴더 */
+#extensionsMenu .wandtrim-folder {
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+/* 긴 폴더 이름은 한 줄로 줄이고 … */
+.wandtrim-folder .wandtrim-folder-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#extensionsMenu .wandtrim-folder[data-wandtrim-open] {
+    opacity: 1;
+}
+
+.wandtrim-folder .wandtrim-chevron {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 0 6px;
+    transition: transform 0.15s;
+}
+
+.wandtrim-folder[data-wandtrim-open] .wandtrim-chevron {
+    transform: rotate(180deg);
+}
+
+/* 폴더 안 항목은 들여쓰기 */
+#extensionsMenu.wandtrim [data-wandtrim-in-folder] {
+    padding-left: 22px;
+}
+
+/* 편집 중: 손가락으로 누르기 쉽게 키우고, 오른쪽에 눈 아이콘 (이 자리를 누르면 숨김/보임) */
+#extensionsMenu.wandtrim-editing>.extension_container>div,
+#extensionsMenu.wandtrim-editing>div:not(.extension_container):not(#wandtrim_panel) {
+    min-height: 44px;
+    align-items: center;
+    opacity: 1;
+}
+
+#extensionsMenu.wandtrim-editing>.extension_container>div::after,
+#extensionsMenu.wandtrim-editing>div:not(.extension_container):not(.wandtrim-own)::after {
+    content: '\f06e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: stretch;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid var(--SmartThemeBorderColor);
+}
+
+#extensionsMenu.wandtrim-editing [data-wandtrim-off] {
+    opacity: 0.35 !important;
+    text-decoration: line-through;
+}
+
+#extensionsMenu.wandtrim-editing [data-wandtrim-off]::after {
+    content: '\f070' !important;
+}
+
+#wandtrim_toggle {
+    border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+/* 메뉴가 화면 밖으로 넘어가지 않게 */
+#extensionsMenu.wandtrim {
+    max-width: calc(100vw - 16px);
+    max-width: calc(100dvw - 16px);
+}
+
+/* 편집 패널: 칩을 한 줄로 늘어놓은 폭으로 메뉴를 넓히지 않고, 메뉴 폭에 맞춰 줄을 바꾼다 */
+#extensionsMenu>#wandtrim_panel {
+    contain: inline-size;
+    display: flex;
+    flex-direction: column;
+    /* 코어가 메뉴 줄에 준 baseline 을 덮어써야 줄이 패널 폭에 맞춰진다 */
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+    margin: 0 4px 4px;
+    opacity: 1;
+    cursor: default;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    background-color: var(--black30a);
+}
+
+.wandtrim-panel-row {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.wandtrim-label,
+.wandtrim-hint {
+    font-size: calc(var(--mainFontSize) * 0.85);
+    opacity: 0.7;
+}
+
+#wandtrim_panel .wandtrim-chip {
+    min-height: 44px;
+    margin: 0;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+#wandtrim_panel .wandtrim-chip span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#wandtrim_panel .wandtrim-chip.active {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBlurTintColor);
+}
+
+/* 자리가 모자라면 버튼이 다음 줄로 내려가게 */
+#wandtrim_panel .wandtrim-input {
+    flex: 1 1 140px;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+}
